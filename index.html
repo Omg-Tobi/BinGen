@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIN Card Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            text-align: center;
+            padding: 20px;
+            margin: 0; /* Remove default margin */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Full viewport height */
+            flex-direction: column;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        h2 {
+            color: #4CAF50;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 5px;
+            word-wrap: break-word;
+            max-height: 200px;  /* Add max-height */
+            overflow-y: auto;  /* Enable scrolling */
+        }
+        .copy-btn-container {
+            margin-top: 10px;
+        }
+        .copy-btn {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .copy-btn:hover {
+            background-color: #0b7dda;
+        }
+        .copied {
+            color: green;
+            margin-top: 5px;
+            font-size: 18px;
+        }
+        .warning {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #777;
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%); /* Center align the footer */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>BIN Card Generator</h2>
+        <form id="binForm">
+            <input type="text" id="binInput" placeholder="Enter BIN (e.g., 123456)" required>
+            <input type="number" id="cardCount" value="10" min="1" max="300" placeholder="Number of Cards (Max 300)" required>
+            <input type="number" id="month" placeholder="Enter Month (optional)" min="1" max="12">
+            <input type="number" id="year" placeholder="Enter Year (optional)" min="2024" max="2030">
+            <button type="submit">Generate Cards</button>
+        </form>
+        <div id="result" class="result"></div>
+        <div id="copyButtonContainer" class="copy-btn-container"></div>
+        <div id="warningMessage" class="warning"></div>
+    </div>
+
+    <div class="footer">
+        <p>Made by OBITO ❤️ | 2024</p>
+    </div>
+
+    <script>
+        document.getElementById("binForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+
+            var bin = document.getElementById("binInput").value.trim();
+            var month = document.getElementById("month").value.trim() || null;
+            var year = document.getElementById("year").value.trim() || null;
+            var cardCount = parseInt(document.getElementById("cardCount").value);
+
+            // Limit card count to 300
+            if (cardCount > 300) {
+                cardCount = 300;
+                document.getElementById("warningMessage").textContent = "Maximum limit of 300 cards reached.";
+            } else {
+                document.getElementById("warningMessage").textContent = "";
+            }
+
+            // Check if the BIN starts with 34 or 37 (American Express)
+            var isAmex = bin.startsWith("34") || bin.startsWith("37");
+            var cardLength = isAmex ? 15 : 16;  // Default 16, 15 for American Express
+
+            var cards = [];
+            for (var i = 0; i < cardCount; i++) {
+                var card = generateCard(bin, cardLength, month, year);
+                cards.push(card);
+            }
+
+            var resultText = cards.join("\n");
+
+            // Show the result
+            document.getElementById("result").textContent = resultText;
+
+            // Add the copy button below the cards
+            var copyButton = document.createElement("button");
+            copyButton.classList.add("copy-btn");
+            copyButton.textContent = "Copy All Cards";
+            copyButton.onclick = function() {
+                copyToClipboard(resultText, copyButton);
+            };
+
+            // Clear any existing copy messages or buttons
+            document.getElementById("copyButtonContainer").innerHTML = '';
+            document.getElementById("copyButtonContainer").appendChild(copyButton);
+        });
+
+        function generateCard(bin, cardLength, month, year) {
+            var card = bin;
+            while (card.length < cardLength - 1) {
+                card += Math.floor(Math.random() * 10); // Add random digits
+            }
+            var checksum = calculateLuhnChecksum(card);
+            var fullCard = card + checksum;
+
+            // If month and year are not provided, generate random values
+            var expiryMonth = month || Math.floor(Math.random() * 12) + 1;
+            var expiryYear = year || Math.floor(Math.random() * (2030 - 2024 + 1)) + 2024;
+
+            return `${fullCard}|${String(expiryMonth).padStart(2, '0')}|${expiryYear}|${generateCVC()}`;
+        }
+
+        function calculateLuhnChecksum(card) {
+            var sum = 0;
+            var shouldDouble = false;
+            for (var i = card.length - 1; i >= 0; i--) {
+                var digit = parseInt(card.charAt(i), 10);
+                if (shouldDouble) {
+                    digit *= 2;
+                    if (digit > 9) {
+                        digit -= 9;
+                    }
+                }
+                sum += digit;
+                shouldDouble = !shouldDouble;
+            }
+            return (10 - (sum % 10)) % 10;
+        }
+
+        function generateCVC() {
+            return Math.floor(Math.random() * 900) + 100;  // Generate random 3-digit CVC
+        }
+
+        function copyToClipboard(text, button) {
+            var textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textArea);
+
+            // Change the button text to indicate success and add a checkmark
+            button.textContent = "Copied ✔";
+            button.disabled = true;  // Disable the button to prevent further clicking
+        }
+    </script>
+</body>
+</html>
