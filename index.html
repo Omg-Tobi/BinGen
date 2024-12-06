@@ -11,12 +11,6 @@
             color: #333;
             text-align: center;
             padding: 20px;
-            margin: 0; /* Remove default margin */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh; /* Full viewport height */
-            flex-direction: column;
         }
         .container {
             background-color: white;
@@ -56,8 +50,8 @@
             padding: 10px;
             border-radius: 5px;
             word-wrap: break-word;
-            max-height: 200px;  /* Add max-height */
-            overflow-y: auto;  /* Enable scrolling */
+            max-height: 200px;
+            overflow-y: auto;
         }
         .copy-btn-container {
             margin-top: 10px;
@@ -87,10 +81,12 @@
             margin-top: 20px;
             font-size: 14px;
             color: #777;
-            position: fixed;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%); /* Center align the footer */
+            text-align: center;
+        }
+        .footer p {
+            margin: 0;
+            color: #333;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -98,10 +94,10 @@
     <div class="container">
         <h2>BIN Card Generator</h2>
         <form id="binForm">
-            <input type="text" id="binInput" placeholder="Enter BIN (e.g., 123456)" required>
+            <input type="text" id="binInput" placeholder="Enter BIN (e.g., xxx123456xxx)" required>
             <input type="number" id="cardCount" value="10" min="1" max="300" placeholder="Number of Cards (Max 300)" required>
             <input type="number" id="month" placeholder="Enter Month (optional)" min="1" max="12">
-            <input type="number" id="year" placeholder="Enter Year (optional)" min="2024" max="2030">
+            <input type="text" id="year" placeholder="Enter Year (optional)">
             <button type="submit">Generate Cards</button>
         </form>
         <div id="result" class="result"></div>
@@ -128,6 +124,20 @@
                 document.getElementById("warningMessage").textContent = "Maximum limit of 300 cards reached.";
             } else {
                 document.getElementById("warningMessage").textContent = "";
+            }
+
+            // Extract numbers from the BIN input
+            bin = bin.replace(/[^0-9]/g, ''); // Remove all non-numeric characters
+
+            // Validate year format and adjust if necessary
+            if (year) {
+                if (year.length === 2) {
+                    year = "20" + year; // Convert 2-digit year to 4-digit year
+                }
+                year = parseInt(year);
+                if (year < 2024 || year > 2099) {
+                    year = null; // Reset if invalid year is entered
+                }
             }
 
             // Check if the BIN starts with 34 or 37 (American Express)
